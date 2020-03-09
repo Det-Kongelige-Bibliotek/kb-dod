@@ -1,34 +1,47 @@
 package dk.kb.dod;
 
-import dk.kb.alma.gen.*;
+import dk.kb.alma.gen.Bib;
+import dk.kb.alma.gen.CodeTable;
+import dk.kb.alma.gen.Item;
+import dk.kb.alma.gen.Items;
+import dk.kb.alma.gen.PickupLocationTypes;
+import dk.kb.alma.gen.RequestTypes;
+import dk.kb.alma.gen.Rows;
+import dk.kb.alma.gen.User;
+import dk.kb.alma.gen.UserRequest;
+import dk.kb.alma.gen.UserResourceSharingRequest;
 import dk.kb.alma.gen.additional.Holdings;
 import org.junit.Assert;
 import org.junit.Ignore;
+//import org.junit.Test;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+//import static org.junit.Assert;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class AlmaClientTest {
     private static final String SANDBOX_APIKEY = "l8xx570d8eccc65b4fc3a8fbb512784181bd";
-    @Ignore
-    @Test
-    public void createItem() throws AlmaConnectionException {
-        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-        long barcode = (long) (Math.random() * 999999999999L);
-        Item item = almaClient.createItem("99120789920105763", "221199059350005763", String.valueOf(barcode), "test item", "1", "2000");
-
-        String title = item.getBibData().getTitle();
-        String itemBarcode = item.getItemData().getBarcode();
-        System.out.println("Created new item with barcode: " + itemBarcode + " and title: " + title);
-    }
 
 //    @Ignore
-//    @org.junit.Test
+//    @Test
+//    public void createItem() throws AlmaConnectionException {
+//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+//        long barcode = (long) (Math.random() * 999999999999L);
+//        Item item = almaClient.createItem("99120789920105763", "221199059350005763", String.valueOf(barcode), "test item", "1", "2000");
+//
+//        String title = item.getBibData().getTitle();
+//        String itemBarcode = item.getItemData().getBarcode();
+//        System.out.println("Created new item with barcode: " + itemBarcode + " and title: " + title);
+//    }
+//
+//    @Ignore
+//    @Test
 //    public void updateItem() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -43,18 +56,18 @@ class AlmaClientTest {
 //        Assert.assertEquals(newBarcode, updatedItem.getItemData().getBarcode());
 //    }
 //
-    @Ignore
-    @Test
-    public void testGetItem() throws AlmaConnectionException {
-        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-
-        Item item = almaClient.getItem("99123290311205763", "221199059350005763", "231615214960005763");
-
-        Assert.assertEquals("test item", item. getItemData().getDescription());
-    }
-
 //    @Ignore
-//    @org.junit.Test
+//    @Test
+//    public void testGetItem() throws AlmaConnectionException {
+//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+//
+//        Item item = almaClient.getItem("99123290311205763", "221199059350005763", "231615214960005763");
+//
+//        Assert.assertEquals("test item", item. getItemData().getDescription());
+//    }
+//
+//    @Ignore
+//    @Test
 //    public void testGetItemByBarcode() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -64,7 +77,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testGetItems() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -74,7 +87,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testGetHoldings() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -84,46 +97,46 @@ class AlmaClientTest {
 //        assertTrue(holdings.getHolding().size() >= 3);
 //    }
 //
+    @Ignore
+    @Test
+    public void testGetBibRecord() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+
+        Bib bib = almaClient.getBibRecord("99123290311205763");  // 99123290311205763
+
+        Assert.assertEquals("99123290311205763", bib.getMmsId());
+    }
+
+    @Ignore
+    @Test
+    public void testGetBibRecordWithNonExistingRecord() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+
+        Bib bib = almaClient.getBibRecord("fail");
+
+        assertNull(bib);
+    }
+//
+    @Ignore
+    @org.junit.Test(expected = AlmaConnectionException.class)
+    public void testGetBibRecordWithFailingPath() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/fail/", SANDBOX_APIKEY);
+
+        almaClient.getBibRecord("fail");
+    }
+
+    @Ignore
+    @Test
+    public void testGetUser() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+
+        User user = almaClient.getUser("thl");
+
+        Assert.assertEquals("Thomas", user.getFirstName().trim());
+    }
+
 //    @Ignore
-//    @org.junit.Test
-//    public void testGetBibRecord() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        Bib bib = almaClient.getBibRecord("99120789920105763");
-//
-//        Assert.assertEquals("99120789920105763", bib.getMmsId());
-//    }
-//
-//    @Ignore
-//    @org.junit.Test
-//    public void testGetBibRecordWithNonExistingRecord() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        Bib bib = almaClient.getBibRecord("fail");
-//
-//        assertNull(bib);
-//    }
-//
-//    @Ignore
-//    @org.junit.Test(expected = AlmaConnectionException.class)
-//    public void testGetBibRecordWithFailingPath() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/fail/", SANDBOX_APIKEY);
-//
-//        almaClient.getBibRecord("fail");
-//    }
-//
-//    @Ignore
-//    @org.junit.Test
-//    public void testGetUser() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        User user = almaClient.getUser("thl");
-//
-//        Assert.assertEquals("Thomas", user.getFirstName().trim());
-//    }
-//
-//    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testGetUserForNonexistingUser() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -133,7 +146,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testCancelRequestWithNonexistingRequest() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -143,7 +156,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testCreateRequestAndCancelRequest() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -157,7 +170,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testCreateAndCancelItemRequest() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -179,7 +192,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testCreateAndCancelDigitizationRequest() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -206,7 +219,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testCreateAndCancelResourceSharingRequest() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -243,7 +256,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testGetRequest() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -253,7 +266,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testGetItemRequests() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -265,7 +278,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testGetResourceSharingRequest() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
@@ -275,7 +288,7 @@ class AlmaClientTest {
 //    }
 //
 //    @Ignore
-//    @org.junit.Test
+//    @Test
 //    public void testGetCodeTable() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 //
