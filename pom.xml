@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>dk.kb.dod</groupId>
+    <artifactId>digitization-on-demand-client</artifactId>
+    <version>0.1-SNAPSHOT</version>
+    <packaging>war</packaging>
+    <name>digitization-on-demand-client</name>
+    <url>http://www.kb.dk</url>
+
+    <parent>
+        <groupId>org.sbforge</groupId>
+        <artifactId>sbforge-parent</artifactId>
+        <version>22</version>
+<!--        <relativePath></relativePath>-->
+    </parent>
+    <scm>
+        <url>https://github.com/Det-Kongelige-Bibliotek/kb-dod</url>
+        <connection>scm:git:ssh://git@github.com:Det-Kongelige-Bibliotek/kb-dod.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:Det-Kongelige-Bibliotek/kb-dod.git</developerConnection>
+    </scm>
+
+    <repositories>
+        <repository>
+            <id>sbforge-nexus</id>
+            <url>https://sbforge.org/nexus/content/groups/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <properties>
+        <build.time>${maven.build.timestamp}</build.time>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+              <java.main.class>dk.kb.dod.DigitizationOnDemand</java.main.class>
+        <!-- Run 'mvn package -DallTests' to run all tests, including slow ones
+             Annotate tests with '@Tag("slow")' or '@Tag("fast")' -->
+        <!-- Specify java version here, to support forbiddenapis plugin -->
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <!-- Replace the line below with  -->
+        <api.check.phase>none</api.check.phase>
+        <!--       to disable forbidden APIs check -->
+        <!--      <api.check.phase>process-classes</api.check.phase>-->
+
+        <org.apache.cxf.version>3.3.5</org.apache.cxf.version>
+    </properties>
+
+    <dependencies>
+        <!-- alma -->
+        <dependency>
+            <groupId>dk.kb.alma</groupId>
+            <artifactId>alma-resources</artifactId>
+            <version>1.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dk.statsbiblioteket.sbutil</groupId>
+            <artifactId>sbutil-common</artifactId>
+            <version>0.5.56</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-cli</artifactId>
+                    <groupId>commons-cli</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j</artifactId>
+                    <groupId>log4j</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.sbforge</groupId>
+            <artifactId>sbforge-parent</artifactId>
+            <version>22</version>
+            <type>pom</type>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.28</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.5.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.junit.platform/junit-platform-engine -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.5.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Apache CXF and servlet stuff -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.1.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-frontend-jaxrs</artifactId>
+            <version>${org.apache.cxf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-rs-client</artifactId>
+            <version>${org.apache.cxf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-transports-http</artifactId>
+            <version>${org.apache.cxf.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-json</artifactId>
+            <version>1.19.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>1.19.4</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+
+  </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <configuration>
+                    <mainClass>dk.kb.dod.DigitizationOnDemand</mainClass>
+                    <arguments>
+                        <argument></argument>
+                    </arguments>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <id>add-test-resource</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/conf</directory>
+                                    <excludes>
+                                        <exclude>**/src/main/conf/logback.xml</exclude>
+                                    </excludes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jvnet.jaxb2.maven2</groupId>
+                <artifactId>maven-jaxb2-plugin</artifactId>
+                <version>0.14.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <id>march21</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <schemaLanguage>XMLSCHEMA</schemaLanguage>
+                            <schemaDirectory>src/schema/loc</schemaDirectory>
+                            <schemaIncludes>
+                                <include>MARC21slim.xsd</include>
+                            </schemaIncludes>
+                            <generatePackage>dk.kb.dod.gen.loc.marc21</generatePackage>
+                            <generateDirectory>target/generated-sources/xjc/loc/marc21</generateDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <id>marcxchange</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <schemaLanguage>XMLSCHEMA</schemaLanguage>
+                            <schemaDirectory>src/schema/loc</schemaDirectory>
+                            <schemaIncludes>
+                                <include>marcxchange-1-1.xsd</include>
+                            </schemaIncludes>
+                            <generatePackage>dk.kb.dod.gen.loc.marcxchange</generatePackage>
+                            <generateDirectory>target/generated-sources/xjc/loc/marcxchange</generateDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.jvnet.jax-ws-commons</groupId>
+                    <artifactId>jaxws-maven-plugin</artifactId>
+                    <version>2.3</version>
+                    <configuration>
+                        <vmArgs>
+                            <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
+                        </vmArgs>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+    </build>
+</project>
