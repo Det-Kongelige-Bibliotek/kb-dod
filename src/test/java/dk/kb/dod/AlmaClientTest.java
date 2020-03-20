@@ -1,24 +1,20 @@
 package dk.kb.dod;
 
-import dk.kb.alma.gen.Bib;
-import dk.kb.alma.gen.CodeTable;
-import dk.kb.alma.gen.Item;
-import dk.kb.alma.gen.Items;
-import dk.kb.alma.gen.PickupLocationTypes;
-import dk.kb.alma.gen.RequestTypes;
-import dk.kb.alma.gen.Rows;
-import dk.kb.alma.gen.User;
-import dk.kb.alma.gen.UserRequest;
-import dk.kb.alma.gen.UserResourceSharingRequest;
+import dk.kb.alma.gen.*;
 import dk.kb.alma.gen.additional.Holdings;
 import org.junit.Assert;
 import org.junit.Ignore;
-//import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
 //import static org.junit.Assert;
+import java.time.LocalDate;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -30,16 +26,42 @@ class AlmaClientTest {
 
 //    @Ignore
 //    @Test
-//    public void createItem() throws AlmaConnectionException {
+//     public void createRepresentation() throws AlmaConnectionException {
 //        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//        long barcode = (long) (Math.random() * 999999999999L);
-//        Item item = almaClient.createItem("99120789920105763", "221199059350005763", String.valueOf(barcode), "test item", "1", "2000");
-//
-//        String title = item.getBibData().getTitle();
-//        String itemBarcode = item.getItemData().getBarcode();
-//        System.out.println("Created new item with barcode: " + itemBarcode + " and title: " + title);
+//        Representation.Library library = new Representation.Library();
+//        library.setValue("KGL");
+//        Representation representation = almaClient.createRepresentation("99123290311205763", library.getValue())  ;
 //    }
-//
+/*
+    @Ignore
+    @Test
+    public void createItem() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+        long barcode = (long) (Math.random() * 999999999999L);
+        Item item = almaClient.createItem("99123290311205763", "222104137010005763", String.valueOf(barcode), "test item", "1", "2000");
+//                                              99120789920105763     222104137000005763, 222104136990005763
+        String title = item.getBibData().getTitle();
+        String itemBarcode = item.getItemData().getBarcode();
+        System.out.println("Created new item with barcode: " + itemBarcode + " and title: " + title);
+    }
+*/
+    @Ignore
+    @Test
+     public void testCreateRecord() throws AlmaConnectionException, DatatypeConfigurationException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+        Bib bib = almaClient.getBibRecord("99123290311205763");
+
+        LocalDate dateCreated = LocalDate.now().minusDays(1L);
+        LocalDate dateModified = LocalDate.now();
+        XMLGregorianCalendar xmlDateCreated =
+            DatatypeFactory.newInstance().newXMLGregorianCalendar(String.valueOf(dateCreated));
+        XMLGregorianCalendar xmlDateModified =
+            DatatypeFactory.newInstance().newXMLGregorianCalendar(String.valueOf(dateModified));
+
+        Bib bib1 = almaClient.createBibRecord(/*bib, "DHE", xmlDateCreated, xmlDateModified*/);
+
+    }
+
 //    @Ignore
 //    @Test
 //    public void updateItem() throws AlmaConnectionException {
@@ -75,28 +97,30 @@ class AlmaClientTest {
 //
 //        Assert.assertEquals("Created via Elba.", item.getItemData().getDescription());
 //    }
-//
-//    @Ignore
-//    @Test
-//    public void testGetItems() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        Items items = almaClient.getItems("99120661858005763", "221157462480005763");
-//
-//        assertTrue(items.getItem().size() >= 2);
-//    }
-//
-//    @Ignore
-//    @Test
-//    public void testGetHoldings() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        Holdings holdings = almaClient.getBibHoldings("99120789920105763");
-//
-//        Assert.assertNotNull(holdings);
-//        assertTrue(holdings.getHolding().size() >= 3);
-//    }
-//
+/*
+
+    @Ignore
+    @Test
+    public void testGetItems() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+
+        Items items = almaClient.getItems("99120661858005763", "221157462480005763");
+
+        assertTrue(items.getItem().size() >= 2);
+    }
+
+*/
+    @Ignore
+    @Test
+    public void testGetHoldings() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+
+        Holdings holdings = almaClient.getBibHoldings("99123290311205763");
+
+        Assert.assertNotNull(holdings);
+        assertTrue(holdings.getHolding().size() >= 3);
+    }
+
     @Ignore
     @Test
     public void testGetBibRecord() throws AlmaConnectionException {
@@ -106,7 +130,6 @@ class AlmaClientTest {
 
         Assert.assertEquals("99123290311205763", bib.getMmsId());
     }
-
     @Ignore
     @Test
     public void testGetBibRecordWithNonExistingRecord() throws AlmaConnectionException {
@@ -118,11 +141,13 @@ class AlmaClientTest {
     }
 //
     @Ignore
-    @org.junit.Test(expected = AlmaConnectionException.class)
+    @Test
     public void testGetBibRecordWithFailingPath() throws AlmaConnectionException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/fail/", SANDBOX_APIKEY);
 
+        Assertions.assertThrows(AlmaConnectionException.class, () -> {
         almaClient.getBibRecord("fail");
+        });
     }
 
     @Ignore
@@ -130,31 +155,31 @@ class AlmaClientTest {
     public void testGetUser() throws AlmaConnectionException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 
-        User user = almaClient.getUser("thl");
+        User user = almaClient.getUser("dahe");
 
-        Assert.assertEquals("Thomas", user.getFirstName().trim());
+        Assert.assertEquals("Dan", user.getFirstName().trim());
     }
 
-//    @Ignore
-//    @Test
-//    public void testGetUserForNonexistingUser() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        User user = almaClient.getUser("nonexistinguser");
-//
-//        assertNull(user);
-//    }
-//
-//    @Ignore
-//    @Test
-//    public void testCancelRequestWithNonexistingRequest() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        boolean success = almaClient.cancelRequest("thl", "999999999999999", "PatronNotInterested", true);
-//
-//        assertFalse("Cancellation should fail.", success);
-//    }
-//
+    @Ignore
+    @Test
+    public void testGetUserForNonexistingUser() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+
+        User user = almaClient.getUser("nonexistinguser");
+
+        assertNull(user);
+    }
+
+    @Ignore
+    @Test
+    public void testCancelRequestWithNonexistingRequest() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+
+        boolean success = almaClient.cancelRequest("dahe", "999999999999999", "PatronNotInterested", true);
+
+        assertFalse("Cancellation should fail.", success);
+    }
+
 //    @Ignore
 //    @Test
 //    public void testCreateRequestAndCancelRequest() throws AlmaConnectionException {
@@ -191,32 +216,6 @@ class AlmaClientTest {
 //        assertTrue(success);
 //    }
 //
-//    @Ignore
-//    @Test
-//    public void testCreateAndCancelDigitizationRequest() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        UserRequest request = new UserRequest();
-//        request.setUserPrimaryId("thl");
-//        request.setRequestType(RequestTypes.DIGITIZATION);
-//        UserRequest.RequestSubType subtype = new UserRequest.RequestSubType();
-//        subtype.setValue("PHYSICAL_TO_DIGITIZATION");
-//        request.setRequestSubType(subtype);
-//        request.setMmsId("99120428345305763");
-//        UserRequest.TargetDestination targetDestination = new UserRequest.TargetDestination();
-//        targetDestination.setValue("DIGI_DEPT_INST");
-//        request.setTargetDestination(targetDestination);
-////        request.setDescription("Nr. 6 (april 2006)");
-//        request.setPartialDigitization(false);
-//
-//        request = almaClient.createRequest(request);
-//
-//        assertTrue(request.getTitle().startsWith("Illustreret tidende"));
-//
-//        boolean success = almaClient.cancelRequest("thl", request.getRequestId(), "PatronNotInterested", false);
-//
-//        assertTrue(success);
-//    }
 //
 //    @Ignore
 //    @Test
@@ -287,14 +286,16 @@ class AlmaClientTest {
 //        Assert.assertEquals("testtest", request.getTitle());
 //    }
 //
-//    @Ignore
-//    @Test
-//    public void testGetCodeTable() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//
-//        CodeTable requestCancellationReasons = almaClient.getCodeTable("RequestCancellationReasons");
-//        Rows rows = requestCancellationReasons.getRows();
-//        Assert.assertNotNull(rows);
-//        assertTrue(rows.getRow().size() > 0);
-//    }
+/*
+    @Ignore
+    @Test
+    public void testGetCodeTable() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+
+        CodeTable requestCancellationReasons = almaClient.getCodeTable("RequestCancellationReasons");
+        Rows rows = requestCancellationReasons.getRows();
+        Assert.assertNotNull(rows);
+        assertTrue(rows.getRow().size() > 0);
+    }
+*/
 }

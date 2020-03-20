@@ -7,6 +7,7 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import dk.kb.alma.gen.*;
 import dk.kb.alma.gen.additional.Holdings;
+import dk.kb.dod.gen.loc.marc21.*;
 import dk.statsbiblioteket.util.xml.DOM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +19,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 public class AlmaClient {
@@ -34,44 +34,76 @@ public class AlmaClient {
         resource = client.resource(url);
     }
 
-    public Item getItem(String bibId, String holdingId, String itemID) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("bibs/%s/holdings/%s/items/%s", bibId, holdingId, itemID));
-        return response == null ? null : response.getEntity(Item.class);
-    }
-
-    /**
-     * Get an Item by barcode
-     * @param barcode
-     * @return
-     * @throws AlmaConnectionException
-     */
-    public Item getItem(String barcode) throws AlmaConnectionException {
-        ClientResponse response = get("items", new QueryParam("item_barcode", barcode));
-        return response == null ? null : response.getEntity(Item.class);
-    }
-
-    public Items getItems(String bibId, String holdingId) throws AlmaConnectionException {
-        int limit = 100;
-        ClientResponse response = get(String.format("bibs/%s/holdings/%s/items", bibId, holdingId), new QueryParam("limit", String.valueOf(limit)));
-        Items items = response == null ? null : response.getEntity(Items.class);
-        if(items != null && items.getItem().size() == limit){
-            log.warn("Retrieved max number of items ({}) for record '{}', holding '{}'. There might be more..", limit, bibId, holdingId);
-        }
-        return items;
-    }
 
     public Holdings getBibHoldings(String bibId) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("bibs/%s/holdings", bibId));
+        ClientResponse response = get(String.format(Locale.UK,"bibs/%s/holdings", bibId));
         return response == null ? null : response.getEntity(Holdings.class);
     }
 
     public Bib getBibRecord(String bibId) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("bibs/%s", bibId));
+        ClientResponse response = get(String.format(Locale.UK,"bibs/%s", bibId));
         return response == null ? null : response.getEntity(Bib.class);
     }
 
+    public Bib updateBibRecord(Bib record) throws AlmaConnectionException {
+        WebResource.Builder builder = createBuilder(String.format(Locale.UK,"bibs/%s", record.getMmsId()));
+        ClientResponse response = builder.put(ClientResponse.class, new JAXBElement<Bib>(new QName("bib"), Bib.class, record));
+        if (response.getStatus() == 200) {
+            return response.getEntity(Bib.class);
+        } else {
+            String errorMessage = getResponseError(response).errorMessage;
+            throw new AlmaConnectionException("Failed to update Alma Bib record. " + errorMessage);
+        }
+    }
+
+    public Bib createBibRecord(/*Bib receivedBib, String createdBy, XMLGregorianCalendar createdDate, XMLGregorianCalendar lastModifiedDate*/) throws AlmaConnectionException {
+//        WebResource.Builder builder = createBuilder(String.format(Locale.UK,"bibs/%s", record.getMmsId()));
+        WebResource.Builder builder = createBuilder("bibs/%s");
+
+        Bib bib = new Bib();
+
+        bib.setMmsId("");  //            sæt value eller sker det automatisk??
+        bib.setRecordFormat("marc21");  //     sæt value eller sker det automatisk??
+        bib.setSuppressFromPublishing("false");
+        Bib.CatalogingLevel catalogingLevel = new Bib.CatalogingLevel();
+        catalogingLevel.setDesc("Default Level");
+        catalogingLevel.setValue("00");
+        bib.setCatalogingLevel(catalogingLevel);
+
+//        linked_record_id  sæt value eller sker det automatisk??
+/*        bib.setTitle(receivedBib.getTitle());
+        bib.setAuthor(receivedBib.getAuthor());
+        bib.setIssn(receivedBib.getIssn());
+        bib.setIsbn(receivedBib.getIsbn());
+//        networkNumbers   sæt value eller sker det automatisk??
+        bib.setDateOfPublication(receivedBib.getDateOfPublication());
+        bib.setCreatedBy(receivedBib.getCreatedBy()); //Fra receivedBib eller som parameter
+        bib.setCreatedDate(createdDate);
+        bib.setLastModifiedBy(receivedBib.getLastModifiedBy());
+        bib.setLastModifiedDate(lastModifiedDate);
+        bib.setSuppressFromPublishing("false");
+//        bib.setSuppressFromExternalSearch("false");
+        bib.setOriginatingSystem(receivedBib.getOriginatingSystem());
+        bib.setOriginatingSystemId(receivedBib.getOriginatingSystemId());
+        bib.setCatalogingLevel(receivedBib.getCatalogingLevel());
+*/
+
+
+
+//        ClientResponse response = builder.put(ClientResponse.class, new JAXBElement<Bib>(new QName("bib"), Bib.class, record));
+
+        ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, bib));
+        if (response.getStatus() == 200){
+            return response.getEntity(Bib.class);
+        } else {
+            String errorMessage = getResponseError(response).errorMessage;
+            throw new AlmaConnectionException("Failed to create Alma record. " + errorMessage);
+        }
+    }
+
+
     public Item createItem(String bibId, String holdingId, String barcode, String description, String pages, String year) throws AlmaConnectionException {
-        WebResource.Builder builder = createBuilder(String.format("bibs/%s/holdings/%s/items", bibId, holdingId));
+        WebResource.Builder builder = createBuilder(String.format(Locale.UK,"bibs/%s/holdings/%s/items", bibId, holdingId));
 
         Item item = new Item();
         ItemData itemData = new ItemData();
@@ -94,7 +126,8 @@ public class AlmaClient {
 
     public Item updateItem(Item item) throws AlmaConnectionException {
         WebResource.Builder builder = createBuilder(
-                String.format("bibs/%s/holdings/%s/items/%s", item.getBibData().getMmsId(), item.getHoldingData().getHoldingId(), item.getItemData().getPid()));
+                String.format(Locale.UK, "bibs/%s/holdings/%s/items/%s", item.getBibData().getMmsId(),
+                    item.getHoldingData().getHoldingId(), item.getItemData().getPid()));
 
         ClientResponse response = builder.put(ClientResponse.class, new JAXBElement<Item>(new QName("item"), Item.class, item));
         if (response.getStatus() == 200) {
@@ -106,28 +139,17 @@ public class AlmaClient {
     }
 
     public User getUser(String userId) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("users/%s", userId));
+        ClientResponse response = get(String.format(Locale.UK,"users/%s", userId));
         return response == null ? null : response.getEntity(User.class);
     }
 
-    public Bib updateBibRecord(Bib record) throws AlmaConnectionException {
-        WebResource.Builder builder = createBuilder(String.format("bibs/%s", record.getMmsId()));
-        ClientResponse response = builder.put(ClientResponse.class, new JAXBElement<Bib>(new QName("bib"), Bib.class, record));
-        if (response.getStatus() == 200) {
-            return response.getEntity(Bib.class);
-        } else {
-            String errorMessage = getResponseError(response).errorMessage;
-            throw new AlmaConnectionException("Failed to update Alma Bib record. " + errorMessage);
-        }
-    }
-
     public UserRequest getRequest(String userId, String requestId) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("users/%s/requests/%s", userId, requestId));
+        ClientResponse response = get(String.format(Locale.UK,"users/%s/requests/%s", userId, requestId));
         return response == null ? null : response.getEntity(UserRequest.class);
     }
 
     public UserResourceSharingRequest getResourceSharingRequest(String userId, String requestId) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("users/%s/resource-sharing-requests/%s", userId, requestId));
+        ClientResponse response = get(String.format(Locale.UK,"users/%s/resource-sharing-requests/%s", userId, requestId));
         return response == null ? null : response.getEntity(UserResourceSharingRequest.class);
     }
 
@@ -157,10 +179,10 @@ public class AlmaClient {
     public boolean cancelRequest(String userId, String requestId, String reasonCode, String note, boolean notifyUser) throws AlmaConnectionException {
         WebResource.Builder builder;
         if (note != null) {
-            builder = createBuilder(String.format("users/%s/requests/%s", userId, requestId),
+            builder = createBuilder(String.format(Locale.UK,"users/%s/requests/%s", userId, requestId),
                     new QueryParam("reason", reasonCode), new QueryParam("note", note), new QueryParam("notify_user", Boolean.toString(notifyUser)));
         } else {
-            builder = createBuilder(String.format("users/%s/requests/%s", userId, requestId),
+            builder = createBuilder(String.format(Locale.UK,"users/%s/requests/%s", userId, requestId),
                     new QueryParam("reason", reasonCode), new QueryParam("notify_user", Boolean.toString(notifyUser)));
         }
         ClientResponse response = builder.delete(ClientResponse.class);
@@ -187,7 +209,7 @@ public class AlmaClient {
      * @throws AlmaConnectionException
      */
     public UserRequest createRequest(String userId, String recordId, String holdingId, String itemId, String pickupLocationCode, XMLGregorianCalendar lastInterestDate) throws AlmaConnectionException {
-        String path = String.format("bibs/%s/holdings/%s/items/%s/requests",
+        String path = String.format(Locale.UK,"bibs/%s/holdings/%s/items/%s/requests",
                 recordId, holdingId, itemId);
         WebResource.Builder builder = createBuilder(path, new QueryParam("user_id", userId), new QueryParam("user_id_type", "all_unique"));
         UserRequest userRequest = new UserRequest();
@@ -215,7 +237,7 @@ public class AlmaClient {
         String userId = request.getUserPrimaryId();
         String mmsId = request.getMmsId();
         String itemId = request.getItemId();
-        String path = String.format("users/%s/requests", userId);
+        String path = String.format(Locale.UK,"users/%s/requests", userId);
         WebResource.Builder builder;
         if (itemId != null) {
             builder = createBuilder(path, new QueryParam("user_id", userId), new QueryParam("user_id_type", "all_unique"), new QueryParam("mms_id", mmsId), new QueryParam("item_pid", itemId));
@@ -232,7 +254,7 @@ public class AlmaClient {
     }
 
     public UserResourceSharingRequest createResourceSharingRequest(UserResourceSharingRequest request, String userId) throws AlmaConnectionException {
-        WebResource.Builder builder = createBuilder(String.format("users/%s/resource-sharing-requests", userId));
+        WebResource.Builder builder = createBuilder(String.format(Locale.UK,"users/%s/resource-sharing-requests", userId));
         ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("user_resource_sharing_request"), UserResourceSharingRequest.class, request));
         if (response.getStatus() == 200) {
             return response.getEntity(UserResourceSharingRequest.class);
@@ -242,8 +264,34 @@ public class AlmaClient {
         }
     }
 
+    public Item getItem(String bibId, String holdingId, String itemID) throws AlmaConnectionException {
+        ClientResponse response = get(String.format(Locale.UK,"bibs/%s/holdings/%s/items/%s", bibId, holdingId, itemID));
+        return response == null ? null : response.getEntity(Item.class);
+    }
+
+    /**
+     * Get an Item by barcode
+     * @param barcode
+     * @return
+     * @throws AlmaConnectionException
+     */
+    public Item getItem(String barcode) throws AlmaConnectionException {
+        ClientResponse response = get("items", new QueryParam("item_barcode", barcode));
+        return response == null ? null : response.getEntity(Item.class);
+    }
+
+    public Items getItems(String bibId, String holdingId) throws AlmaConnectionException {
+        int limit = 100;
+        ClientResponse response = get(String.format(Locale.UK,"bibs/%s/holdings/%s/items", bibId, holdingId), new QueryParam("limit", String.valueOf(limit)));
+        Items items = response == null ? null : response.getEntity(Items.class);
+        if(items != null && items.getItem().size() == limit){
+            log.warn("Retrieved max number of items ({}) for record '{}', holding '{}'. There might be more..", limit, bibId, holdingId);
+        }
+        return items;
+    }
+
     public List<UserRequest> getItemRequests(String recordId, String holdingId, String itemId) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("bibs/%s/holdings/%s/items/%s/requests", recordId, holdingId, itemId));
+        ClientResponse response = get(String.format(Locale.UK,"bibs/%s/holdings/%s/items/%s/requests", recordId, holdingId, itemId));
         return response == null ? new ArrayList<>() : response.getEntity(UserRequests.class).getUserRequest();
     }
 
@@ -252,7 +300,7 @@ public class AlmaClient {
     }
 
     public CodeTable getCodeTable(String codeTableName,String lang) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("conf/code-tables/%s", codeTableName),new QueryParam("lang",lang));
+        ClientResponse response = get(String.format(Locale.UK,"conf/code-tables/%s", codeTableName),new QueryParam("lang",lang));
         return response == null ? null : response.getEntity(CodeTable.class);
     }
 
