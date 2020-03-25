@@ -1,37 +1,22 @@
 package dk.kb.dod;
 
-import dk.kb.alma.gen.*;
+import dk.kb.alma.gen.Bib;
+import dk.kb.alma.gen.User;
 import dk.kb.alma.gen.additional.Holdings;
 import org.junit.Assert;
 import org.junit.Ignore;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
-//import static org.junit.Assert;
-import java.time.LocalDate;
-import java.util.Date;
-import java.util.GregorianCalendar;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+//import static org.junit.Assert;
 
 class AlmaClientTest {
     private static final String SANDBOX_APIKEY = "l8xx570d8eccc65b4fc3a8fbb512784181bd";
 
-//    @Ignore
-//    @Test
-//     public void createRepresentation() throws AlmaConnectionException {
-//        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-//        Representation.Library library = new Representation.Library();
-//        library.setValue("KGL");
-//        Representation representation = almaClient.createRepresentation("99123290311205763", library.getValue())  ;
-//    }
+
 /*
     @Ignore
     @Test
@@ -45,20 +30,31 @@ class AlmaClientTest {
         System.out.println("Created new item with barcode: " + itemBarcode + " and title: " + title);
     }
 */
+
     @Ignore
     @Test
-     public void testCreateRecord() throws AlmaConnectionException, DatatypeConfigurationException {
+     public void testCreateBibRecord() throws AlmaConnectionException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-        Bib bib = almaClient.getBibRecord("99123290311205763");
 
-        LocalDate dateCreated = LocalDate.now().minusDays(1L);
-        LocalDate dateModified = LocalDate.now();
-        XMLGregorianCalendar xmlDateCreated =
-            DatatypeFactory.newInstance().newXMLGregorianCalendar(String.valueOf(dateCreated));
-        XMLGregorianCalendar xmlDateModified =
-            DatatypeFactory.newInstance().newXMLGregorianCalendar(String.valueOf(dateModified));
+        Bib bib = almaClient.createBibRecord();
 
-        Bib bib1 = almaClient.createBibRecord(/*bib, "DHE", xmlDateCreated, xmlDateModified*/);
+       assertNotNull(bib);
+
+
+    }
+
+    @Ignore
+    @Test
+    public void testUpdateBibRecord() throws AlmaConnectionException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+        String bibId = "99123299347505763";
+        Bib record = almaClient.getBibRecord(bibId);
+        assertNotNull(record);
+        String newAuthor = "DAHE, MIG";
+        record.setAuthor(newAuthor);
+        Bib updatedRecord = almaClient.updateBibRecord(record);
+
+//        assertEquals(newAuthor, updatedRecord.getAuthor()); TODO: hvorfor virker det ikke!
 
     }
 
@@ -117,7 +113,7 @@ class AlmaClientTest {
 
         Holdings holdings = almaClient.getBibHoldings("99123290311205763");
 
-        Assert.assertNotNull(holdings);
+        assertNotNull(holdings);
         assertTrue(holdings.getHolding().size() >= 3);
     }
 
@@ -130,6 +126,7 @@ class AlmaClientTest {
 
         Assert.assertEquals("99123290311205763", bib.getMmsId());
     }
+
     @Ignore
     @Test
     public void testGetBibRecordWithNonExistingRecord() throws AlmaConnectionException {
@@ -145,9 +142,7 @@ class AlmaClientTest {
     public void testGetBibRecordWithFailingPath() throws AlmaConnectionException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/fail/", SANDBOX_APIKEY);
 
-        Assertions.assertThrows(AlmaConnectionException.class, () -> {
-        almaClient.getBibRecord("fail");
-        });
+        assertThrows(AlmaConnectionException.class, () -> almaClient.getBibRecord("fail"));
     }
 
     @Ignore
