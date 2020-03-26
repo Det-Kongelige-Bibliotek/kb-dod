@@ -37,8 +37,8 @@ class AlmaClientTest {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 
         Bib bib = almaClient.createBibRecord();
-
-       assertNotNull(bib);
+        assertNotNull(bib);
+//        String mmsId = bib.getMmsId();
 
 
     }
@@ -50,11 +50,13 @@ class AlmaClientTest {
         String bibId = "99123299347505763";
         Bib record = almaClient.getBibRecord(bibId);
         assertNotNull(record);
-        String newAuthor = "DAHE, MIG";
+        String newAuthor = "Egebo, Dan";
         record.setAuthor(newAuthor);
+        String title = "NewTitle";
+        record.setTitle(title);
         Bib updatedRecord = almaClient.updateBibRecord(record);
 
-//        assertEquals(newAuthor, updatedRecord.getAuthor()); TODO: hvorfor virker det ikke!
+        assertEquals(newAuthor, updatedRecord.getAuthor()); //TODO: hvorfor virker det ikke!
 
     }
 

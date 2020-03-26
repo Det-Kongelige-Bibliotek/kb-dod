@@ -61,18 +61,18 @@ public class AlmaClient {
         Bib record = new Bib();
 
 //        record.setMmsId("");  //            sæt values eller sker det automatisk ved create??
-        record.setRecordFormat("marc21");
-        record.setSuppressFromPublishing("false");
-        Bib.CatalogingLevel catalogingLevel = new Bib.CatalogingLevel();
-        catalogingLevel.setDesc("Default Level");
-        catalogingLevel.setValue("00");
-        record.setCatalogingLevel(catalogingLevel);
+//        record.setRecordFormat("marc21");
+//        record.setSuppressFromPublishing("false");
+//        Bib.CatalogingLevel catalogingLevel = new Bib.CatalogingLevel();
+//        catalogingLevel.setDesc("Default Level");
+//        catalogingLevel.setValue("00");
+//        record.setCatalogingLevel(catalogingLevel);
 //        Bib.LinkedRecordId linkedRecordId = new Bib.LinkedRecordId();
 //        linkedRecordId.setType("");
 //        linkedRecordId.setValue("");
 //        record.setLinkedRecordId(linkedRecordId);
 
-        ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("record"), Bib.class, record));
+        ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, record));
         if (response.getStatus() == 200){
             return response.getEntity(Bib.class);
         } else {
