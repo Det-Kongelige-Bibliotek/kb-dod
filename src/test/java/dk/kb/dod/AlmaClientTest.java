@@ -1,46 +1,32 @@
 package dk.kb.dod;
 
 import dk.kb.alma.gen.Bib;
+import dk.kb.alma.gen.Item;
 import dk.kb.alma.gen.User;
 import dk.kb.alma.gen.additional.Holdings;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 
 //import static org.junit.Assert;
 
 class AlmaClientTest {
     private static final String SANDBOX_APIKEY = "l8xx570d8eccc65b4fc3a8fbb512784181bd";
 
-
-/*
-    @Ignore
-    @Test
-    public void createItem() throws AlmaConnectionException {
-        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-        long barcode = (long) (Math.random() * 999999999999L);
-        Item item = almaClient.createItem("99123290311205763", "222104137010005763", String.valueOf(barcode), "test item", "1", "2000");
-//                                              99120789920105763     222104137000005763, 222104136990005763
-        String title = item.getBibData().getTitle();
-        String itemBarcode = item.getItemData().getBarcode();
-        System.out.println("Created new item with barcode: " + itemBarcode + " and title: " + title);
-    }
-*/
-
     @Ignore
     @Test
      public void testCreateBibRecord() throws AlmaConnectionException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-
         Bib bib = almaClient.createBibRecord();
         assertNotNull(bib);
 //        String mmsId = bib.getMmsId();
-
-
     }
 
     @Ignore
@@ -56,10 +42,21 @@ class AlmaClientTest {
         record.setTitle(title);
         Bib updatedRecord = almaClient.updateBibRecord(record);
 
-        assertEquals(newAuthor, updatedRecord.getAuthor()); //TODO: hvorfor virker det ikke!
+        assertEquals(newAuthor, updatedRecord.getAuthor()); //TODO: hvorfor bliver data ikke opdateret!
 
     }
 
+/*    @Ignore
+        @Test
+        public void createItem() throws AlmaConnectionException {
+            AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+            long barcode = (long) (Math.random() * 999999999999L);
+            Item item = almaClient.createItem("99123290311205763", "222104136990005763", String.valueOf(barcode), "test item", "1", "2000");
+    //                                              99120789920105763     222104137000005763, 222104136990005763
+            String title = item.getBibData().getTitle();
+            String itemBarcode = item.getItemData().getBarcode();
+            System.out.println("Created new item with barcode: " + itemBarcode + " and title: " + title);
+        }*/
 //    @Ignore
 //    @Test
 //    public void updateItem() throws AlmaConnectionException {
@@ -124,7 +121,7 @@ class AlmaClientTest {
     public void testGetBibRecord() throws AlmaConnectionException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
 
-        Bib bib = almaClient.getBibRecord("99123290311205763");  // 99123290311205763
+        Bib bib = almaClient.getBibRecord("99123290311205763");
 
         Assert.assertEquals("99123290311205763", bib.getMmsId());
     }

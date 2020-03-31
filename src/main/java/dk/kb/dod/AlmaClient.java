@@ -7,6 +7,7 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import dk.kb.alma.gen.*;
 import dk.kb.alma.gen.additional.Holdings;
+import dk.kb.alma.gen.additional.Location;
 import dk.statsbiblioteket.util.xml.DOM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.w3c.dom.Document;
 
 import javax.ws.rs.core.MediaType;
 import javax.xml.bind.JAXBElement;
+import javax.xml.crypto.dsig.XMLObject;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 import java.io.IOException;
@@ -60,7 +62,9 @@ public class AlmaClient {
         WebResource.Builder builder = createBuilder("bibs");
         Bib record = new Bib();
 
-//        record.setMmsId("");  //            sæt values eller sker det automatisk ved create??
+/*        record.setMmsId("");*/
+
+//            sæt values eller sker det automatisk ved create??
 //        record.setRecordFormat("marc21");
 //        record.setSuppressFromPublishing("false");
 //        Bib.CatalogingLevel catalogingLevel = new Bib.CatalogingLevel();
@@ -71,6 +75,9 @@ public class AlmaClient {
 //        linkedRecordId.setType("");
 //        linkedRecordId.setValue("");
 //        record.setLinkedRecordId(linkedRecordId);
+
+
+
 
         ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, record));
         if (response.getStatus() == 200){
