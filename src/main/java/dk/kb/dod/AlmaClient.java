@@ -7,7 +7,6 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import dk.kb.alma.gen.*;
 import dk.kb.alma.gen.additional.Holdings;
-import dk.kb.alma.gen.additional.Location;
 import dk.statsbiblioteket.util.xml.DOM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +14,6 @@ import org.w3c.dom.Document;
 
 import javax.ws.rs.core.MediaType;
 import javax.xml.bind.JAXBElement;
-import javax.xml.crypto.dsig.XMLObject;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 import java.io.IOException;
@@ -36,56 +34,83 @@ public class AlmaClient {
         resource = client.resource(url);
     }
 
-
-    public Holdings getBibHoldings(String bibId) throws AlmaConnectionException {
-        ClientResponse response = get(String.format("bibs/%s/holdings", bibId));
-        return response == null ? null : response.getEntity(Holdings.class);
-    }
-
+    /**
+     * Retrieve a Bib record
+     * @param bibId The mmsId of the record to retrieve
+     * @return The Bib object from Alma
+     * @throws AlmaConnectionException Error message in case of Alma GET failure
+     */
     public Bib getBibRecord(String bibId) throws AlmaConnectionException {
         ClientResponse response = get(String.format("bibs/%s", bibId));
         return response == null ? null : response.getEntity(Bib.class);
     }
 
+    /**
+     * Update the contents of an existing Bib record in Alma
+     *
+     * @param record The Bib record to update. The values of the Bib record that should be updated, must have been
+     *               changed before calling this method
+     * @return The new updated Bib record
+     * @throws AlmaConnectionException Error message in case of PUT failure
+     */
     public Bib updateBibRecord(Bib record) throws AlmaConnectionException {
-        WebResource.Builder builder = createBuilder(String.format("bibs/%s", record.getMmsId()));
+        String mmsId = record.getMmsId();
+        WebResource.Builder builder = createBuilder(String.format("bibs/%s", mmsId));
         ClientResponse response = builder.put(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, record));
         if (response.getStatus() == 200) {
             return response.getEntity(Bib.class);
         } else {
             String errorMessage = getResponseError(response).errorMessage;
+            log.warn("Bib record '{}' was not updated: ", mmsId);
             throw new AlmaConnectionException("Failed to update Alma Bib record. " + errorMessage);
         }
     }
 
-    public Bib createBibRecord() throws AlmaConnectionException {
+    /**
+     * Create a new basic Bib record with only 'Title' set. The record should be updated {@link #updateBibRecord(Bib)}
+     * with relevant values after creation, e.g. Leader, ControlFields and relevant DataFields
+     * @return The Alma Bib record with Title = "NewTitle"
+     * @throws AlmaConnectionException Error message in case of POST failure
+     * @throws MarcXmlException Error message in case of MarcRecord handling error
+     */
+    public Bib createBibRecord() throws AlmaConnectionException, MarcXmlException {
         WebResource.Builder builder = createBuilder("bibs");
-        Bib record = new Bib();
+        Bib bibRecord = new Bib();
+        MarcRecordHelper.createMarcRecord(bibRecord);
 
-/*        record.setMmsId("");*/
-
-//            sæt values eller sker det automatisk ved create??
-//        record.setRecordFormat("marc21");
-//        record.setSuppressFromPublishing("false");
-//        Bib.CatalogingLevel catalogingLevel = new Bib.CatalogingLevel();
-//        catalogingLevel.setDesc("Default Level");
-//        catalogingLevel.setValue("00");
-//        record.setCatalogingLevel(catalogingLevel);
-//        Bib.LinkedRecordId linkedRecordId = new Bib.LinkedRecordId();
-//        linkedRecordId.setType("");
-//        linkedRecordId.setValue("");
-//        record.setLinkedRecordId(linkedRecordId);
-
-
-
-
-        ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, record));
+        ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, bibRecord));
         if (response.getStatus() == 200){
-            return response.getEntity(Bib.class);
+            Bib res = response.getEntity(Bib.class);
+            log.info("New record created with mmsId: " + res.getMmsId());
+            return res;
         } else {
             String errorMessage = getResponseError(response).errorMessage;
-            throw new AlmaConnectionException("Failed to create Alma record. " + errorMessage);
+            throw new AlmaConnectionException("Failed to create Alma bibRecord. " + errorMessage);
         }
+    }
+
+    /**
+     * Delete the specified Alma record
+     * @param mmsId The mmsId of the record to delete
+     * @return true if success
+     * @throws AlmaConnectionException Error message in case of DELETE failure
+     */
+    public boolean deleteBibRecord(String mmsId)throws AlmaConnectionException {
+        String path = String.format("bibs/%s/", mmsId);
+        WebResource.Builder builder = createBuilder(path);
+        ClientResponse response = builder.delete(ClientResponse.class, path);
+        if (response.getStatus() == 204) {
+            log.info("Bib record (mmsId '{}') was deleted.", mmsId);
+            return true;
+        } else {
+            String errorMessage = getResponseError(response).errorMessage;
+            throw new AlmaConnectionException("Failed to delete Alma Bib record. " + errorMessage);
+        }
+    }
+
+    public Holdings getBibHoldings(String bibId) throws AlmaConnectionException {
+        ClientResponse response = get(String.format("bibs/%s/holdings", bibId));
+        return response == null ? null : response.getEntity(Holdings.class);
     }
 
     public Item createItem(String bibId, String holdingId, String barcode, String description, String pages, String year) throws AlmaConnectionException {
@@ -111,8 +136,8 @@ public class AlmaClient {
 
     public Item updateItem(Item item) throws AlmaConnectionException {
         WebResource.Builder builder = createBuilder(
-                String.format( "bibs/%s/holdings/%s/items/%s", item.getBibData().getMmsId(),
-                    item.getHoldingData().getHoldingId(), item.getItemData().getPid()));
+            String.format( "bibs/%s/holdings/%s/items/%s", item.getBibData().getMmsId(),
+                item.getHoldingData().getHoldingId(), item.getItemData().getPid()));
 
         ClientResponse response = builder.put(ClientResponse.class, new JAXBElement<>(new QName("item"), Item.class, item));
         if (response.getStatus() == 200) {
@@ -196,7 +221,7 @@ public class AlmaClient {
      */
     public UserRequest createRequest(String userId, String recordId, String holdingId, String itemId, String pickupLocationCode, XMLGregorianCalendar lastInterestDate) throws AlmaConnectionException {
         String path = String.format("bibs/%s/holdings/%s/items/%s/requests",
-                recordId, holdingId, itemId);
+            recordId, holdingId, itemId);
         WebResource.Builder builder = createBuilder(path, new QueryParam("user_id", userId), new QueryParam(
             "user_id_type", "all_unique"));
         UserRequest userRequest = new UserRequest();
@@ -327,8 +352,8 @@ public class AlmaClient {
             webResource = webResource.queryParam(queryParam.key, queryParam.value);
         }
         return webResource
-                .type(MediaType.APPLICATION_XML)
-                .header("Authorization", "apikey " + apikey);
+            .type(MediaType.APPLICATION_XML)
+            .header("Authorization", "apikey " + apikey);
     }
 
     private static class AlmaError {

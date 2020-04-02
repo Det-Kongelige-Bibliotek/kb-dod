@@ -1,12 +1,12 @@
 package dk.kb.dod;
 
 import dk.kb.alma.gen.Bib;
-import dk.kb.alma.gen.Item;
 import dk.kb.alma.gen.User;
 import dk.kb.alma.gen.additional.Holdings;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
+import org.marc4j.marc.Record;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -15,35 +15,35 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertNotNull;
 
-//import static org.junit.Assert;
-
 class AlmaClientTest {
     private static final String SANDBOX_APIKEY = "l8xx570d8eccc65b4fc3a8fbb512784181bd";
 
     @Ignore
     @Test
-     public void testCreateBibRecord() throws AlmaConnectionException {
+    public void testCreateAndDeleteBibRecord() throws AlmaConnectionException, MarcXmlException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
         Bib bib = almaClient.createBibRecord();
         assertNotNull(bib);
-//        String mmsId = bib.getMmsId();
+        assertTrue(almaClient.deleteBibRecord(bib.getMmsId()));
     }
 
     @Ignore
     @Test
-    public void testUpdateBibRecord() throws AlmaConnectionException {
+    public void testUpdateBibRecord() throws AlmaConnectionException, MarcXmlException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
-        String bibId = "99123299347505763";
+        String bibId =  "99123299347505763";
         Bib record = almaClient.getBibRecord(bibId);
         assertNotNull(record);
-        String newAuthor = "Egebo, Dan";
-        record.setAuthor(newAuthor);
-        String title = "NewTitle";
-        record.setTitle(title);
+
+        String newTitle = "AnotherTitle";
+        Record marcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(record);
+        MarcRecordHelper.setDataField(marcRecord, "245", 'a', newTitle );
+//        assertTrue(MarcRecordHelper.setTitle(marcRecord, newTitle));
+
+
+        MarcRecordHelper.saveMarcRecordOnAlmaRecord(record, marcRecord);
         Bib updatedRecord = almaClient.updateBibRecord(record);
-
-        assertEquals(newAuthor, updatedRecord.getAuthor()); //TODO: hvorfor bliver data ikke opdateret!
-
+        assertEquals(newTitle, updatedRecord.getTitle());
     }
 
 /*    @Ignore
