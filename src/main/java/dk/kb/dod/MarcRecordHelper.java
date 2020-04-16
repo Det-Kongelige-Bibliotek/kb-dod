@@ -32,22 +32,33 @@ public class MarcRecordHelper {
     private static final String AUTHOR_TAG = "100";
     private static final char AUTHOR_CODE = 'a';
 
+    /**
+     * Create a title field when creating a new Bib record
+     * @param bibRecord The new Bib record that gets the title
+     * @throws MarcXmlException Exception in case of Marc handling error
+     */
     public static void createMarcRecord(Bib bibRecord) throws MarcXmlException {
         MarcFactory marcFactory = MarcFactory.newInstance();
         Record marcRecord = marcFactory.newRecord();
-        // Add minimum contents for creating a new Bib record (Title)
+        // Add minimum contents for creating a new Bib record (i.e. the title)
         DataField dataField = marcFactory.newDataField(TITLE_TAG,'1','0');
-        dataField.addSubfield(marcFactory.newSubfield(TITLE_CODE, "NewBook"));
+        dataField.addSubfield(marcFactory.newSubfield(TITLE_CODE, "NewTitle"));
         marcRecord.addVariableField(dataField);
         MarcRecordHelper.saveMarcRecordOnAlmaRecord(bibRecord, marcRecord);
     }
 
     public static Record getMarcRecordFromAlmaRecord(Bib almaRecord) throws MarcXmlException {
-        if(almaRecord.getAny().size() != 4){
-            throw new MarcXmlException("4 marcXml objects expected, but " + almaRecord.getAny().size() +
+        Node marcXmlNode;
+        int anySize = almaRecord.getAny().size();
+        if(anySize == 4){
+            marcXmlNode = (Node) almaRecord.getAny().get(3);
+        } else if (anySize == 1){
+            marcXmlNode = (Node) almaRecord.getAny().get(0);
+        } else {
+            throw new MarcXmlException("Wrong number of marcXml objects:  " + almaRecord.getAny().size() +
                 " was found on Alma record with id: " + almaRecord.getMmsId());
         }
-        Node marcXmlNode = (Node) almaRecord.getAny().get(3);
+
         try (InputStream marcXmlStream = IOUtils.toInputStream(DOM.domToString(marcXmlNode, false))) {
             MarcXmlReader marcXmlReader = new MarcXmlReader(marcXmlStream);
             Record marcRecord;
@@ -99,6 +110,14 @@ public class MarcRecordHelper {
         return setDataField(marcRecord, AUTHOR_TAG, AUTHOR_CODE, author);
     }
 
+    /**
+     * Update contents for an existing data field on a Marc record
+     * @param marcRecord The Marc record
+     * @param dataFieldTag tag, e.g. "100" (Author)
+     * @param subFieldCode code (E.g. 'a')
+     * @param subfieldValue value (E.g. "Andersen, H.C.")
+     * @return false if the field is not present otherwise true
+     */
     public static boolean setDataField(Record marcRecord, String dataFieldTag, char subFieldCode, String subfieldValue) {
         DataField field = (DataField) marcRecord.getVariableField(dataFieldTag);
         if(field == null){
@@ -112,6 +131,35 @@ public class MarcRecordHelper {
         return true;
     }
 
+    /**
+     * Add a new @dataField to a {@link Bib} record
+     *
+     * @param almaRecord The record to add new datafield to
+     * @param dataFieldTag The tag to add (E.g. "100", "500")
+     * @param dataFieldInd1 (E.g. '1')
+     * @param dataFieldInd2 (E.g. '0' )
+     * @param subfieldCode (E.g. 'a')
+     * @param subfieldValue The text value of the subfield
+     * @throws MarcXmlException Exception in case of Marc handling error
+     */
+    public static void addDataField(Bib almaRecord, String dataFieldTag, char dataFieldInd1, char dataFieldInd2,
+                                    char subfieldCode, String subfieldValue) throws MarcXmlException {
+        MarcFactory marcFactory = MarcFactory.newInstance();
+        Record marcRecord = getMarcRecordFromAlmaRecord(almaRecord);
+        DataField dataField = marcFactory.newDataField(dataFieldTag, dataFieldInd1, dataFieldInd2);
+        dataField.addSubfield(marcFactory.newSubfield(subfieldCode, subfieldValue));
+        marcRecord.addVariableField(dataField);
+        MarcRecordHelper.saveMarcRecordOnAlmaRecord(almaRecord, marcRecord);
+    }
+
+    public static void addSubfield(Bib almaRecord, String dataFieldTag, char subfieldCode, String subfieldValue) throws MarcXmlException {
+        MarcFactory marcFactory = MarcFactory.newInstance();
+        Record marcRecord = getMarcRecordFromAlmaRecord(almaRecord);
+        DataField dataField = (DataField) marcRecord.getVariableField(dataFieldTag);
+        dataField.addSubfield(marcFactory.newSubfield(subfieldCode, subfieldValue));
+        marcRecord.addVariableField(dataField);
+        MarcRecordHelper.saveMarcRecordOnAlmaRecord(almaRecord, marcRecord);
+    }
 
 //    /**
 //     * Extract the periodical type from an alma Bib record

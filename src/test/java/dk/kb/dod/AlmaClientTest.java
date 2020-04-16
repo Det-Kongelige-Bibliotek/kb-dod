@@ -35,13 +35,19 @@ class AlmaClientTest {
         Bib record = almaClient.getBibRecord(bibId);
         assertNotNull(record);
 
-        String newTitle = "AnotherTitle";
+        String newTitle = "NewTitle";
+        String author = "LastName, FirstName";
         Record marcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(record);
-        MarcRecordHelper.setDataField(marcRecord, "245", 'a', newTitle );
+        assertTrue(MarcRecordHelper.setDataField(marcRecord, "245", 'a', newTitle ));
 //        assertTrue(MarcRecordHelper.setTitle(marcRecord, newTitle));
-
-
+        assertTrue(MarcRecordHelper.setDataField(marcRecord, "100", 'a', author));
+//        assertTrue(MarcRecordHelper.setAuthor(marcRecord, author));
         MarcRecordHelper.saveMarcRecordOnAlmaRecord(record, marcRecord);
+
+        MarcRecordHelper.addDataField(record, "909", ' ', ' ', 'a',
+            "Digitalisering 2016 af udgaven: Kbh., 1911 (12 s.)");
+        MarcRecordHelper.addSubfield(record,"500", 'b', "Some Value");
+
         Bib updatedRecord = almaClient.updateBibRecord(record);
         assertEquals(newTitle, updatedRecord.getTitle());
     }
