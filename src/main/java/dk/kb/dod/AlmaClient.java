@@ -8,6 +8,7 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import dk.kb.alma.gen.*;
 import dk.kb.alma.gen.additional.Holdings;
 import dk.statsbiblioteket.util.xml.DOM;
+import org.marc4j.marc.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -18,6 +19,8 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Month;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +29,16 @@ public class AlmaClient {
     private static final Logger log = LoggerFactory.getLogger(AlmaClient.class);
     private final WebResource resource;
     private String apikey;
+
+    private static final String TITLE_TAG = "245";
+    protected static final String NOTEFIELD_TAG = "500";
+    protected static final String NETWORK_NUMBER_TAG = "035";
+    protected static final Character EMPTY_INDICATOR = ' ';
+    protected static final Character SUBFIELD_A = 'a';
+    protected static final Character SUBFIELD_B = 'b';
+    protected static final Character SUBFIELD_C = 'c';
+
+    public static final String[] TAGS = {TITLE_TAG,"084","100","245","599","700","710"};
 
     public AlmaClient(String url, String apikey) {
         this.apikey = apikey;
@@ -54,16 +67,27 @@ public class AlmaClient {
      * @throws AlmaConnectionException Error message in case of PUT failure
      */
     public Bib updateBibRecord(Bib record) throws AlmaConnectionException {
-        String mmsId = record.getMmsId();
-        WebResource.Builder builder = createBuilder(String.format("bibs/%s", mmsId));
-        ClientResponse response = builder.put(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, record));
-        if (response.getStatus() == 200) {
-            return response.getEntity(Bib.class);
-        } else {
-            String errorMessage = getResponseError(response).errorMessage;
-            log.warn("Bib record '{}' was not updated: ", mmsId);
-            throw new AlmaConnectionException("Failed to update Alma Bib record. " + errorMessage);
-        }
+        return almaPUT(record);
+    }
+
+    /**
+     * This sets whether the record should be published to Primo.
+     * true means that the record will NOT be published. The subfield 'u' of datafield 096 will be set to:
+     *  "Kan ikke hjemlånes"
+     * @param bibId The record Id of the record to suppress
+     * @param suppressValue String value "true" means to suppress and "false" not to suppress
+     * @return the Bib record
+     * @throws AlmaConnectionException Error message in case of PUT failure
+     * @throws MarcXmlException Error message in case of MarcRecord handling error
+     */
+    public Bib setSuppressFromPublishing(String bibId, String suppressValue) throws AlmaConnectionException, MarcXmlException {
+        Bib record = getBibRecord(bibId);
+        record.setSuppressFromPublishing(suppressValue);
+        if (suppressValue.equals("true")) {
+        Record marcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(record);
+        MarcRecordHelper.addSubfield(marcRecord, "096", 'u', "Kan ikke hjemlånes");
+        MarcRecordHelper.saveMarcRecordOnAlmaRecord(record, marcRecord);}
+        return almaPUT(record);
     }
 
     /**
@@ -74,19 +98,73 @@ public class AlmaClient {
      * @throws MarcXmlException Error message in case of MarcRecord handling error
      */
     public Bib createBibRecord() throws AlmaConnectionException, MarcXmlException {
-        WebResource.Builder builder = createBuilder("bibs");
         Bib bibRecord = new Bib();
         MarcRecordHelper.createMarcRecord(bibRecord);
+        return almaPOST(bibRecord);
+    }
 
-        ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, bibRecord));
-        if (response.getStatus() == 200){
-            Bib res = response.getEntity(Bib.class);
-            log.info("New record created with mmsId: " + res.getMmsId());
-            return res;
-        } else {
-            String errorMessage = getResponseError(response).errorMessage;
-            throw new AlmaConnectionException("Failed to create Alma bibRecord. " + errorMessage);
-        }
+    public Bib createDigitalRecordFromAnalog(String bibId) throws AlmaConnectionException, MarcXmlException {
+        Bib analogRecord = getBibRecord(bibId);
+        Bib digitalRecord = createBibRecord();
+        MarcRecordHelper.createMarcRecord(digitalRecord);
+
+        // Helper records to manipulate data in the Bib records
+        Record anaMarcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(analogRecord);
+        Record digiMarcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(digitalRecord);
+
+        // Copy the fields without changes one-to-one
+        // 100,084,100,245,599,700,710 TODO more to come in tags?
+        MarcRecordHelper.getVariableField(analogRecord, digiMarcRecord, TAGS);
+
+        // 500
+        MarcRecordHelper.getVariableFields(analogRecord, digiMarcRecord, NOTEFIELD_TAG);
+
+        // 035
+        MarcRecordHelper.getVariableFields(analogRecord, digiMarcRecord, NETWORK_NUMBER_TAG);
+
+        // Extract data from old fields and create new
+        // 500
+        String ex = "Efter Det Kgl Biblioteks eksemplar: ";
+        Subfield sf = MarcRecordHelper.getSubfieldValue(analogRecord, "096", SUBFIELD_A);
+        MarcRecordHelper.addDataField(digiMarcRecord, NOTEFIELD_TAG, EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_A, ex + sf );
+
+        //TODO dette skal være digitaliseringsåret og måned, how to get?
+        String year = Year.now().toString();
+        String month = String.valueOf(Month.APRIL);
+
+        // 500
+        String dig = "Digitalisering " + year + " af udgaven: ";
+        Subfield a260 = MarcRecordHelper.getSubfieldValue(analogRecord, "260", SUBFIELD_A);
+        Subfield b260 = MarcRecordHelper.getSubfieldValue(analogRecord, "260", SUBFIELD_B);
+        Subfield c260 = MarcRecordHelper.getSubfieldValue(analogRecord, "260", SUBFIELD_C);
+        Subfield a300 = MarcRecordHelper.getSubfieldValue(analogRecord, "300", SUBFIELD_A);
+        Subfield b300 = MarcRecordHelper.getSubfieldValue(analogRecord, "300", SUBFIELD_B);
+        MarcRecordHelper.addDataField(digiMarcRecord, NOTEFIELD_TAG, EMPTY_INDICATOR, EMPTY_INDICATOR,SUBFIELD_A,
+            dig + a260 + b260 + c260 + a300 + b300);
+
+        // 775
+
+        Subfield systemNumber = MarcRecordHelper.getSystemNumber(analogRecord, anaMarcRecord);
+
+
+        // Create new fields
+        MarcRecordHelper.addDataField(digiMarcRecord,"090", EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_A, "0" );
+        MarcRecordHelper.addDataField(digiMarcRecord,"091", EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_A, "Bog");
+        MarcRecordHelper.addDataField(digiMarcRecord,"260",EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_C, year);
+
+        // 599
+        MarcRecordHelper.addDataField(digiMarcRecord,"599", EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_B,
+            "Digi" + year + month); //TODO find digitaliseringsåret + måned
+
+        // 856
+
+        // 997
+        // 998
+
+
+        // Copy all the fields from the Marc Record to the new digital Alma record
+        MarcRecordHelper.saveMarcRecordOnAlmaRecord(digitalRecord, digiMarcRecord);
+        return almaPOST(digitalRecord);
     }
 
     /**
@@ -315,6 +393,43 @@ public class AlmaClient {
     public CodeTable getCodeTable(String codeTableName,String lang) throws AlmaConnectionException {
         ClientResponse response = get(String.format("conf/code-tables/%s", codeTableName), new QueryParam("lang", lang));
         return response == null ? null : response.getEntity(CodeTable.class);
+    }
+
+    /**
+     * Send PUT to Alma and get response
+     * @param record The alma record to manipulate
+     * @return The response from Alma
+     * @throws AlmaConnectionException If PUT operation failed
+     */
+    private Bib almaPUT(Bib record) throws AlmaConnectionException {
+        String mmsId = record.getMmsId();
+        WebResource.Builder builder = createBuilder(String.format("bibs/%s", mmsId));
+        ClientResponse response = builder.put(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, record));
+        if (response.getStatus() == 200) {
+            return response.getEntity(Bib.class);
+        } else {
+            String errorMessage = getResponseError(response).errorMessage;
+            log.warn("Bib record '{}' was not updated: ", mmsId);
+            throw new AlmaConnectionException("Failed to update Alma Bib record. " + errorMessage);
+        }
+    }
+    /**
+     * Send POST to Alma and get response
+     * @param bibRecord The alma record to create
+     * @return The response from Alma
+     * @throws AlmaConnectionException If POST operation failed
+     */
+    private Bib almaPOST(Bib bibRecord) throws AlmaConnectionException {
+        WebResource.Builder builder = createBuilder("bibs");
+        ClientResponse response = builder.post(ClientResponse.class, new JAXBElement<>(new QName("bib"), Bib.class, bibRecord));
+        if (response.getStatus() == 200){
+            Bib res = response.getEntity(Bib.class);
+            log.info("New record created with mmsId: " + res.getMmsId());
+            return res;
+        } else {
+            String errorMessage = getResponseError(response).errorMessage;
+            throw new AlmaConnectionException("Failed to create Alma bibRecord. " + errorMessage);
+        }
     }
 
     private ClientResponse get(String path, QueryParam ... queryParams) throws AlmaConnectionException {

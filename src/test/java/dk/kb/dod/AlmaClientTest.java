@@ -7,7 +7,12 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 import org.marc4j.marc.Record;
+import org.marc4j.marc.Subfield;
 
+import java.time.Month;
+import java.time.Year;
+
+import static dk.kb.dod.AlmaClient.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -29,27 +34,132 @@ class AlmaClientTest {
 
     @Ignore
     @Test
+    public void testCreateDigiFromAna() throws AlmaConnectionException, MarcXmlException {
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+        String bibId =  "99123299347505763";
+        Bib analogRecord = almaClient.getBibRecord(bibId);
+        Bib digitalRecord = almaClient.createBibRecord();
+
+        MarcRecordHelper.createMarcRecord(digitalRecord);
+
+        // Helper records to manipulate data in the Bib records
+        Record anaMarcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(analogRecord);
+        Record digiMarcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(digitalRecord);
+
+        Subfield systemNumber = MarcRecordHelper.getSystemNumber(analogRecord, anaMarcRecord);
+        // Copy the fields without changes one-to-one
+        // 100,084,100,245,599,700,710 TODO more to come in tags?
+        MarcRecordHelper.getVariableField(analogRecord, digiMarcRecord, TAGS);
+        // 500
+        MarcRecordHelper.getVariableFields(analogRecord, digiMarcRecord, NOTEFIELD_TAG);
+        // 035
+        MarcRecordHelper.getVariableFields(analogRecord, digiMarcRecord, NETWORK_NUMBER_TAG);
+
+        // Extract data from old fields and create new
+        // 500
+        String ex = "Efter Det Kgl Biblioteks eksemplar: ";
+        Subfield sf = MarcRecordHelper.getSubfieldValue(analogRecord, "096", SUBFIELD_A);
+        MarcRecordHelper.addDataField(digiMarcRecord, NOTEFIELD_TAG, EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_A, ex + sf );
+
+        //TODO dette skal være digitaliseringsåret og måned, how to get?
+        String year = Year.now().toString();
+        String month = String.valueOf(Month.APRIL);
+
+        // 500
+        String dig = "Digitalisering " + year + " af udgaven: ";
+        Subfield a260 = MarcRecordHelper.getSubfieldValue(analogRecord, "260", SUBFIELD_A);
+        Subfield b260 = MarcRecordHelper.getSubfieldValue(analogRecord, "260", SUBFIELD_B);
+        Subfield c260 = MarcRecordHelper.getSubfieldValue(analogRecord, "260", SUBFIELD_C);
+        Subfield a300 = MarcRecordHelper.getSubfieldValue(analogRecord, "300", SUBFIELD_A);
+        Subfield b300 = MarcRecordHelper.getSubfieldValue(analogRecord, "300", SUBFIELD_B);
+        MarcRecordHelper.addDataField(digiMarcRecord, NOTEFIELD_TAG, EMPTY_INDICATOR, EMPTY_INDICATOR,SUBFIELD_A,
+            dig + a260 + b260 + c260 + a300 + b300);
+
+        // 775
+
+
+        // Create new fields
+        MarcRecordHelper.addDataField(digiMarcRecord,"090", EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_A, "0" );
+        MarcRecordHelper.addDataField(digiMarcRecord,"091", EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_A, "Bog");
+        MarcRecordHelper.addDataField(digiMarcRecord,"260",EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_C, year);
+
+        // 599
+        MarcRecordHelper.addDataField(digiMarcRecord,"599", EMPTY_INDICATOR, EMPTY_INDICATOR, SUBFIELD_B,
+            "Digi" + year + month); //TODO find digitaliseringsåret + måned
+
+        // 856
+
+        // 997
+        // 998
+
+
+        // Copy all the fields from the Marc Record to the new digital Alma record
+        MarcRecordHelper.saveMarcRecordOnAlmaRecord(digitalRecord, digiMarcRecord);
+        Bib updatedRecord = almaClient.updateBibRecord(digitalRecord);
+    }
+
+    @Ignore
+    @Test
     public void testUpdateBibRecord() throws AlmaConnectionException, MarcXmlException {
         AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
         String bibId =  "99123299347505763";
-        Bib record = almaClient.getBibRecord(bibId);
-        assertNotNull(record);
+        Bib oldRecord = almaClient.getBibRecord(bibId);
+        assertNotNull(oldRecord);
+        Record marcOldRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(oldRecord);
 
-        String newTitle = "NewTitle";
-        String author = "LastName, FirstName";
-        Record marcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(record);
-        assertTrue(MarcRecordHelper.setDataField(marcRecord, "245", 'a', newTitle ));
-//        assertTrue(MarcRecordHelper.setTitle(marcRecord, newTitle));
-        assertTrue(MarcRecordHelper.setDataField(marcRecord, "100", 'a', author));
-//        assertTrue(MarcRecordHelper.setAuthor(marcRecord, author));
-        MarcRecordHelper.saveMarcRecordOnAlmaRecord(record, marcRecord);
+        String newTitle = "SomeTitle: ";
+//        assertTrue(MarcRecordHelper.setDataField(marcOldRecord, "245", 'a', newTitle ));
+//        MarcRecordHelper.addSubfield(marcOldRecord, "245", 'b', "More title info");
+//        MarcRecordHelper.saveMarcRecordOnAlmaRecord(oldRecord, marcOldRecord);
+//        almaClient.updateBibRecord(oldRecord);
 
-        MarcRecordHelper.addDataField(record, "909", ' ', ' ', 'a',
-            "Digitalisering 2016 af udgaven: Kbh., 1911 (12 s.)");
-        MarcRecordHelper.addSubfield(record,"500", 'b', "Some Value");
+        Bib newRecord = almaClient.createBibRecord();
+        assertNotNull(newRecord);
+        Record marcNewRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(newRecord);
+//        Record marcOldRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(oldRecord);
 
-        Bib updatedRecord = almaClient.updateBibRecord(record);
+
+        // Copy Title from oldRecord to marcNewRecord
+        MarcRecordHelper.getVariableField(oldRecord, marcNewRecord, "245");
+
+        //Copy "500" notefelter to marcNewRecord
+        MarcRecordHelper.getVariableFields(oldRecord, marcNewRecord, "500");
+//        marcNewRecord.addVariableField();
+
+        // save update fields to the new record
+        MarcRecordHelper.saveMarcRecordOnAlmaRecord(newRecord, marcNewRecord);
+        // Update the alma record
+        Bib updatedRecord = almaClient.updateBibRecord(newRecord);
+
         assertEquals(newTitle, updatedRecord.getTitle());
+
+        assertTrue(almaClient.deleteBibRecord(newRecord.getMmsId()));
+/*        assertTrue(MarcRecordHelper.setTitle(marcRecord, newTitle));*/
+//        assertTrue(MarcRecordHelper.setDataField(marcRecord, "100", 'a', author));
+/*        assertTrue(MarcRecordHelper.setAuthor(marcRecord, author));*/
+//        MarcRecordHelper.saveMarcRecordOnAlmaRecord(record, marcRecord);
+
+
+/*
+        Bib bib = almaClient.createBibRecord();
+        Record mRec = MarcRecordHelper.getMarcRecordFromAlmaRecord(bib);
+        String newTitle = "AnotherTitle";
+        assertTrue(MarcRecordHelper.setDataField(mRec, "245", 'a', newTitle ));
+        MarcRecordHelper.addDataField(mRec, "909", ' ', ' ', 'a',
+            "The value of subfield a");
+
+        MarcRecordHelper.addSubfield(mRec,"909",'b', "Subfield b value");
+        DataField dataField = MarcRecordHelper.getDataField(mRec,"909");
+        List<Subfield> subFields = dataField.getSubfields();
+
+        MarcRecordHelper.addDataField(mRec, "500", dataField.getIndicator1(), dataField.getIndicator2(), subFields);
+
+        MarcRecordHelper.saveMarcRecordOnAlmaRecord(bib, mRec);
+        Bib updatedRecord = almaClient.updateBibRecord(bib);
+
+        assertEquals(newTitle, updatedRecord.getTitle());
+        assertTrue(almaClient.deleteBibRecord(bib.getMmsId()));
+*/
     }
 
 /*    @Ignore
