@@ -13,7 +13,7 @@ public class GetRecord {
     public static Bib bib = new Bib();
 
     public static void main(String[] args) throws Exception {
-        AlmaClient almaClient = new AlmaClient(url, apikey);
+        AlmaClient almaClient = new AlmaClient(url, apikey,10000,30000,"da");
         //bib = almaClient.getBibRecord(bibId);
         Item myItem = almaClient.getItem("115408052665");  // getRecord(bibId, url, apikey);
         System.out.println("bibid is = "+ myItem.getBibData().getMmsId());
@@ -27,8 +27,8 @@ public class GetRecord {
     }
 
     public static Bib getRecord(String bibId, String url, String apikey) throws AlmaConnectionException {
-        AlmaClient almaClient = new AlmaClient(url, apikey);
-        bib = almaClient.getBibRecord(bibId);
+        AlmaClient almaClient = new AlmaClient(url, apikey, 10000,30000,"da");
+        bib = almaClient.getBib(bibId);
         return bib;
     }
 }

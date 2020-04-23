@@ -1,0 +1,99 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+       xmlns:jee="http://www.springframework.org/schema/jee"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="
+            http://www.springframework.org/schema/beans   http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://cxf.apache.org/jaxrs                   http://cxf.apache.org/schemas/jaxrs.xsd
+            http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd
+            http://www.springframework.org/schema/jee     http://www.springframework.org/schema/jee/spring-jee.xsd">
+
+
+    <!--
+
+            <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    loads applicationContext.xml
+
+       <servlet-name>request-pull</servlet-name>
+            <servlet-class>org.apache.cxf.transport.servlet.CXFServlet</servlet-class>
+    loads request-pull-servlet.xml (based on servlet name)
+
+    They end up in the same environment, so it does not really matter what is defined where. For this project, we chose to put the beans in applicationContext.xml.
+
+    -->
+
+    <!--This makes the @AutoWired work-->
+    <context:annotation-config/>
+
+
+    <!--This reads the config file path from tomcat context and makes the values available in here in the ${} notation-->
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"
+          p:fileEncoding="UTF-8">
+        <property name="location">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg>
+                    <jee:jndi-lookup jndi-name="application-config"/>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+
+    <!--Alma client from the config above-->
+    <bean id="almaClient" class="dk.kb.dod.AlmaClient">
+        <constructor-arg name="almaTarget" value="${alma.url}"/>
+        <constructor-arg name="alma_apikey" value="${alma.apikey}"/>
+        <constructor-arg name="minSleep" value="${alma_rate_limit_min_sleep_millis}"/>
+        <constructor-arg name="sleepVariation" value="${alma_rate_limit_sleep_variation_millis}"/>
+        <constructor-arg name="lang" value="${alma.lang}"/>
+    </bean>
+
+
+
+    <!--Read the email.properties from the path in tomcat context env var email-config-->
+    <bean id="emailProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean"
+          autowire-candidate="false" p:fileEncoding="UTF-8">
+        <property name="location">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg>
+                    <jee:jndi-lookup jndi-name="email-config"/>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+
+
+    <!--The general facade -->
+    <bean id="facade" class="dk.kb.dod.facade.DodFacade">
+        <constructor-arg name="almaClient" ref="almaClient"/>
+        <constructor-arg name="emailProperties" ref="emailProperties"/>
+    </bean>
+
+
+    <!--The service-->
+    <bean id="service" class="dk.kb.dod.service.DodRest">
+        <constructor-arg name="facade" ref="facade"/>
+    </bean>
+
+    <!-- CXF OpenApiFeature -->
+    <bean id="openApiFeature" class="org.apache.cxf.jaxrs.openapi.OpenApiFeature">
+        <property name="scan" value="true"/>
+<!--        <property name="scanKnownConfigLocations" value="true"/> &lt;!&ndash;This seems to be nessesary for openapi-configuration.json to be picked up &ndash;&gt;-->
+        <property name="configLocation" value="classpath:openapi-configuration.yaml"/>
+    </bean>
+
+    <!--Serve cxf from /-->
+    <jaxrs:server id="kb-dod" address="/">
+        <jaxrs:serviceBeans>
+            <ref bean="service"/>
+        </jaxrs:serviceBeans>
+        <jaxrs:providers>
+            <bean class="com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider"/>
+        </jaxrs:providers>
+        <jaxrs:features>
+            <ref bean="openApiFeature"/> <!--Will be available on /openapi.json-->
+        </jaxrs:features>
+    </jaxrs:server>
+
+</beans>

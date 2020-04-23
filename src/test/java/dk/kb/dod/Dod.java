@@ -10,7 +10,7 @@ import java.util.Properties;
 
 public class Dod {
 
-    private static final Logger log = LoggerFactory.getLogger(AlmaClient.class);
+    private static final Logger log = LoggerFactory.getLogger(Dod.class);
 
     public static void main(String[] args) throws Exception {
         String call = dodWorkFlow("115408052665");
@@ -23,7 +23,7 @@ public class Dod {
 
         String apikey = dodpro.getProperty("alma.apikey");
         String url = dodpro.getProperty("alma.url");
-        AlmaClient almaclient = new AlmaClient(url, apikey);
+        AlmaClient almaclient = new AlmaClient(url, apikey,10000,30000,"da");
         Item myItem = almaclient.getItem(barcode);  // getRecord(bibId, url, apikey);
         return  myItem.getBibData().getMmsId();
 

@@ -1,30 +1,17 @@
 package dk.kb.dod;
 
 import dk.kb.alma.gen.Bib;
-import dk.kb.alma.gen.CodeTable;
-import dk.kb.alma.gen.Item;
-import dk.kb.alma.gen.Items;
-import dk.kb.alma.gen.PickupLocationTypes;
-import dk.kb.alma.gen.RequestTypes;
-import dk.kb.alma.gen.Rows;
 import dk.kb.alma.gen.User;
-import dk.kb.alma.gen.UserRequest;
-import dk.kb.alma.gen.UserResourceSharingRequest;
-import dk.kb.alma.gen.additional.Holdings;
-import org.junit.Assert;
-import org.junit.Ignore;
-//import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-//import static org.junit.Assert;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+//import org.junit.Test;
+//import static org.junit.Assert;
+
+@Disabled
 class AlmaClientTest {
     private static final String SANDBOX_APIKEY = "l8xx570d8eccc65b4fc3a8fbb512784181bd";
 
@@ -97,42 +84,38 @@ class AlmaClientTest {
 //        assertTrue(holdings.getHolding().size() >= 3);
 //    }
 //
-    @Ignore
     @Test
     public void testGetBibRecord() throws AlmaConnectionException {
-        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY, 10000,30000,"da");
 
-        Bib bib = almaClient.getBibRecord("99123290311205763");  // 99123290311205763
+        Bib bib = almaClient.getBib("99123290311205763");  // 99123290311205763
 
-        Assert.assertEquals("99123290311205763", bib.getMmsId());
+        assertEquals("99123290311205763", bib.getMmsId());
     }
 
-    @Ignore
     @Test
     public void testGetBibRecordWithNonExistingRecord() throws AlmaConnectionException {
-        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY, 10000,30000,"da");
 
-        Bib bib = almaClient.getBibRecord("fail");
+        Bib bib = almaClient.getBib("fail");
 
         assertNull(bib);
     }
 //
-    @Ignore
-    @org.junit.Test(expected = AlmaConnectionException.class)
+    @Test
     public void testGetBibRecordWithFailingPath() throws AlmaConnectionException {
-        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/fail/", SANDBOX_APIKEY);
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/fail/", SANDBOX_APIKEY, 10000,30000,"da");
 
-        almaClient.getBibRecord("fail");
+        almaClient.getBib("fail");
     }
 
-    @Ignore
     @Test
     public void testGetUser() throws AlmaConnectionException {
-        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY);
+        AlmaClient almaClient = new AlmaClient("https://api-eu.hosted.exlibrisgroup.com/almaws/v1/", SANDBOX_APIKEY, 10000,30000,"da");
 
         User user = almaClient.getUser("thl");
 
-        Assert.assertEquals("Thomas", user.getFirstName().trim());
+        assertEquals("Thomas", user.getFirstName().trim());
     }
 
 //    @Ignore

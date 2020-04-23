@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Context override="true" docBase="${project.home}/target/kb-dod.war">
+
+
+    <Environment name="java-webapp-logback-config"
+                 value="${project.home}/conf/logback.xml"
+                 type="java.lang.String"
+                 override="false"/>
+
+    <Environment name="application-config"
+                 value="${project.home}/conf/dod.properties"
+                 type="java.lang.String"
+                 override="false"/>
+
+    <Environment name="email-config"
+                 value="${project.home}/conf/email.properties"
+                 type="java.lang.String"
+                 override="false"/>
+
+
+</Context>
+
