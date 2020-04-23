@@ -1,4 +1,4 @@
-package dk.kb.dod;
+package dk.kb.dod.service;
 
 import javax.ws.rs.*;
 
@@ -8,6 +8,7 @@ public class DodRest {
     @Path("dod/{barcode}")
 
     public String dodWork(@PathParam("barcode") String barcode) {
-        return barcode;
+        System.out.println("called!");
+    	return barcode;
     }
 }
