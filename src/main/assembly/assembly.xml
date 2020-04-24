@@ -17,15 +17,15 @@
     <files>
         <file>
             <outputDirectory>/services</outputDirectory>
-            <source>target/kb-dod.war</source>
+            <source>target/${project.build.finalName}.war</source>
         </file>
 
         <file>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>.</outputDirectory>
             <source>Install.md</source>
         </file>
         <file>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>.</outputDirectory>
             <source>Changelog.md</source>
         </file>
 

@@ -28,8 +28,10 @@ cp $SCRIPT_DIR/conf/context.xml $TOMCAT_HOME/conf/Catalina/localhost/$PROJECTNAM
 
 sleep 5
 
+warfile=$(ls -1 target/*.war | head -n 1 | xargs -r -i basename {})
+
 export JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-11/}
-export JAVA_OPTS="$JAVA_OPTS -Dproject.home=$SCRIPT_DIR"
+export JAVA_OPTS="$JAVA_OPTS -Dproject.home=$SCRIPT_DIR -Dproject.build.finalName=$warfile"
 export JPDA_ADDRESS="localhost:7500"
 
 exec $TOMCAT_HOME/bin/catalina.sh jpda run
