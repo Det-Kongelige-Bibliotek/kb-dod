@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+    <New id="java-webapp-logback-config" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+        <Arg>java-webapp-logback-config</Arg>
+        <Arg type="java.lang.String">
+            ${basedir}/target/jetty-res/logback.xml
+        </Arg>
+        <Arg type="boolean">true</Arg>
+    </New>
+
+    <New id="application-config" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+        <Arg>application-config</Arg>
+        <Arg type="java.lang.String">
+            ${basedir}/conf/dod.properties
+        </Arg>
+        <Arg type="boolean">true</Arg>
+    </New>
+
+    <New id="email-config" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+        <Arg>email-config</Arg>
+        <Arg type="java.lang.String">
+            ${basedir}/conf/email.properties
+        </Arg>
+        <Arg type="boolean">true</Arg>
+    </New>
+
+</Configure>
