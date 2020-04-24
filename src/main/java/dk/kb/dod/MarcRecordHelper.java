@@ -25,13 +25,13 @@ public class MarcRecordHelper {
 
     private static final Logger log = LoggerFactory.getLogger(MarcRecordHelper.class);
 
-    private static final String TITLE_TAG = "245";
     private static final char TITLE_CODE = 'a';
     private static final String AUTHOR_TAG = "100";
     private static final char AUTHOR_CODE = 'a';
 
     /**
      * Create a title field when creating a new Bib record
+     *
      * @param almaRecord The new Bib record that gets the title
      * @throws MarcXmlException Exception in case of Marc handling error
      */
@@ -40,12 +40,13 @@ public class MarcRecordHelper {
             MarcFactory marcFactory = MarcFactory.newInstance();
             Record marcRecord = marcFactory.newRecord();
             // Add minimum contents for creating a new Bib record (i.e. the title)
-            DataField dataField = marcFactory.newDataField(TITLE_TAG,'1','0');
+            DataField dataField = marcFactory.newDataField(AlmaClient.DF245_TAG, '1', '0');
             dataField.addSubfield(marcFactory.newSubfield(TITLE_CODE, "NewTitle"));
             marcRecord.addVariableField(dataField);
             MarcRecordHelper.saveMarcRecordOnAlmaRecord(almaRecord, marcRecord);
         } catch (MarcXmlException e) {
-            log.warn("Could not create marc record {} for Bib {}.", almaRecord.getAny().stream().findFirst().toString(), almaRecord.getMmsId());
+            log.warn("Could not create marc record {} for Bib {}.",
+                almaRecord.getAny().stream().findFirst().toString(), almaRecord.getMmsId());
             throw new MarcXmlException("Failed to create new record");
         }
     }
@@ -53,9 +54,9 @@ public class MarcRecordHelper {
     public static Record getMarcRecordFromAlmaRecord(Bib almaRecord) throws MarcXmlException {
         Node marcXmlNode;
         int anySize = almaRecord.getAny().size();
-        if(anySize == 4){
+        if (anySize == 4) {
             marcXmlNode = (Node) almaRecord.getAny().get(3);
-        } else if (anySize == 1){
+        } else if (anySize == 1) {
             marcXmlNode = (Node) almaRecord.getAny().get(0);
         } else {
             throw new MarcXmlException("Wrong number of marcXml objects:  " + almaRecord.getAny().size() +
@@ -70,7 +71,7 @@ public class MarcRecordHelper {
             } else {
                 throw new MarcXmlException("No marc record found in marcXml on Alma record with id: " + almaRecord.getMmsId());
             }
-            if(marcXmlReader.hasNext()){
+            if (marcXmlReader.hasNext()) {
                 throw new MarcXmlException("Multiple marc records found in marcXml on Alma record with id: " +
                     almaRecord.getMmsId());
             }
@@ -97,15 +98,17 @@ public class MarcRecordHelper {
 
     /**
      * Sets the title on the marc record. Assumes that the field already exists
+     *
      * @return true if the title is successfully set
      * false if the record is missing the field
      */
     public static boolean setTitle(Record marcRecord, String title) {
-        return setDataField(marcRecord, TITLE_TAG, TITLE_CODE, title);
+        return setDataField(marcRecord, AlmaClient.DF245_TAG, TITLE_CODE, title);
     }
 
     /**
      * Sets the author on the marc record. Assumes that the field already exists
+     *
      * @return true if the author is successfully set.
      * false if the record is missing the field
      */
@@ -115,20 +118,22 @@ public class MarcRecordHelper {
 
     /**
      * Update contents for an existing data field on a Marc record
-     * @param marcRecord The Marc record
-     * @param dataFieldTag tag, e.g. "100" (Author)
-     * @param subFieldCode code (E.g. 'a')
+     *
+     * @param marcRecord    The Marc record
+     * @param dataFieldTag  tag, e.g. "100" (Author)
+     * @param subFieldCode  code (E.g. 'a')
      * @param subfieldValue value (E.g. "Andersen, H.C.")
      * @return false if the field is not present otherwise true
      */
 
-    public static boolean setDataField(Record marcRecord, String dataFieldTag, char subFieldCode, String subfieldValue) {
+    public static boolean setDataField(Record marcRecord, String dataFieldTag, char subFieldCode,
+                                       String subfieldValue) {
         DataField field = (DataField) marcRecord.getVariableField(dataFieldTag);
-        if(field == null){
+        if (field == null) {
             return false;
         }
         Subfield subfield = field.getSubfield(subFieldCode);
-        if(subfield == null){
+        if (subfield == null) {
             return false;
         }
         field.getSubfields().get(0).setData(subfieldValue);
@@ -138,11 +143,11 @@ public class MarcRecordHelper {
     /**
      * Add a new @dataField with one subfield to a Marc record
      *
-     * @param marcRecord The record to add new datafield to
-     * @param dataFieldTag The tag to add (E.g. "100", "500")
+     * @param marcRecord    The record to add new datafield to
+     * @param dataFieldTag  The tag to add (E.g. "100", "500")
      * @param dataFieldInd1 (E.g. '1')
      * @param dataFieldInd2 (E.g. '0' )
-     * @param subfieldCode (E.g. 'a')
+     * @param subfieldCode  (E.g. 'a')
      * @param subfieldValue The text value of the subfield
      */
     public static void addDataField(Record marcRecord, String dataFieldTag, char dataFieldInd1, char dataFieldInd2,
@@ -161,15 +166,15 @@ public class MarcRecordHelper {
     /**
      * Add a new @dataField with more subfields to a Marc record
      *
-     * @param marcRecord The record to add new datafield to
-     * @param dataFieldTag The tag to add (E.g. "100", "500")
+     * @param marcRecord    The record to add new datafield to
+     * @param dataFieldTag  The tag to add (E.g. "100", "500")
      * @param dataFieldInd1 (E.g. '1')
      * @param dataFieldInd2 (E.g. ' ' )
-     * @param subFields a list of the subfields to add
+     * @param subFields     a list of the subfields to add
      */
 
     public static void addDataField(Record marcRecord, String dataFieldTag, char dataFieldInd1, char dataFieldInd2,
-                                    List<Subfield> subFields ) {
+                                    List<Subfield> subFields) {
 
         MarcFactory marcFactory = MarcFactory.newInstance();
 //            Record marcRecord = getMarcRecordFromAlmaRecord(almaRecord);
@@ -186,9 +191,10 @@ public class MarcRecordHelper {
 
     /**
      * Add a subfield to an existing field
-     * @param marcRecord The marc record to add the subfield to
-     * @param dataFieldTag The tag to add the subfield to, e.g. "100"
-     * @param subfieldCode The code of the subfield, e.g. 'b'
+     *
+     * @param marcRecord    The marc record to add the subfield to
+     * @param dataFieldTag  The tag to add the subfield to, e.g. "100"
+     * @param subfieldCode  The code of the subfield, e.g. 'b'
      * @param subfieldValue The data of the subfield e.g. "Some new data"
      */
     public static void addSubfield(Record marcRecord, String dataFieldTag, char subfieldCode, String subfieldValue) {
@@ -200,29 +206,42 @@ public class MarcRecordHelper {
 //            MarcRecordHelper.saveMarcRecordOnAlmaRecord(almaRecord, marcRecord);
 //        return marcRecord;
     }
-
-    public static DataField getDataField(Bib almaRecord, String tag ) throws MarcXmlException {
+    public static String getControlField(Bib almaRecord, String tag){
         try {
             Record marcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(almaRecord);
-            return (DataField)marcRecord.getVariableField(tag);
+            ControlField cf = (ControlField) marcRecord.getVariableField(tag);
+            return cf.getData();
+        }
+       catch (MarcXmlException e) {
+           log.info("ControlField {} was not found", tag);
+           return null;
+        }
+
+    }
+    public static DataField getDataField(Bib almaRecord, String tag) throws MarcXmlException {
+        try {
+            Record marcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(almaRecord);
+            return (DataField) marcRecord.getVariableField(tag);
         } catch (MarcXmlException e) {
             log.info("DataField {} was not found", tag);
             return null;
         }
     }
-    public static Subfield getSubfieldValue(Bib almaRecord, String tag , Character subfield) throws MarcXmlException {
+
+    public static String getSubfieldValue(Bib almaRecord, String tag, Character subfield) throws MarcXmlException {
         Record marcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(almaRecord);
         try {
-            DataField df = (DataField)marcRecord.getVariableField(tag);
-            return df.getSubfield(subfield);
+            DataField df = (DataField) marcRecord.getVariableField(tag);
+            return df.getSubfield(subfield).getData();
         } catch (Exception e) {
             log.info("DataField {} was not found", tag);
             return null;
         }
     }
-    public static DataField getDataField(Record marcRecord, String tag ) throws MarcXmlException {
+
+    public static DataField getDataField(Record marcRecord, String tag) throws MarcXmlException {
         try {
-            return (DataField)marcRecord.getVariableField(tag);
+            return (DataField) marcRecord.getVariableField(tag);
         } catch (Exception e) {
             log.info("DataField {} was not found", tag);
             return null;
@@ -231,9 +250,10 @@ public class MarcRecordHelper {
 
     /**
      * Get one (the first if more exist) datafield with the specified tag
+     *
      * @param almaRecord The (Alma) record to retrieve data from
      * @param marcRecord The (Marc) record to copy data to
-     * @param tag The data tag to copy
+     * @param tag        The data tag to copy
      * @throws MarcXmlException Exception in case of Marc handling error
      */
     public static void getVariableField(Bib almaRecord, Record marcRecord, String tag) throws MarcXmlException {
@@ -260,9 +280,10 @@ public class MarcRecordHelper {
 
     /**
      * Get all occurrences with the specified tag
+     *
      * @param almaRecord The (Alma) record to retrieve data from
      * @param marcRecord The (Marc) record to copy data to
-     * @param tag The tag to copy from
+     * @param tag        The tag to copy from
      * @throws MarcXmlException Exception in case of Marc handling error
      */
     public static void getVariableFields(Bib almaRecord, Record marcRecord, String tag) throws MarcXmlException {
@@ -271,26 +292,28 @@ public class MarcRecordHelper {
         for (VariableField vf : variableFields) {
             try {
                 marcRecord.addVariableField(vf);
-            }catch (Exception e){
+            } catch (Exception e) {
                 log.info("DataField {} was not found", tag);
             }
         }
     }
 
-    public static Subfield getSystemNumber(Bib almaRecord, Record marcRecord) throws MarcXmlException {
-        String tag = "035";
-        String bibNumber = "(DK-810010)";
+    public static String getSystemNumber(Bib almaRecord, Record marcRecord) throws MarcXmlException {
+        String tag = AlmaClient.DF035_TAG;
+        String bibNumber = AlmaClient.BIBNUMBER;
         Record almaMarcRecord = MarcRecordHelper.getMarcRecordFromAlmaRecord(almaRecord);
         List<VariableField> variableFields = almaMarcRecord.getVariableFields(tag);
-        for (VariableField vf : variableFields) {
+        for (VariableField ignored : variableFields) {
             try {
                 List<VariableField> variableFields1 = marcRecord.find(bibNumber);
-                DataField df= (DataField)variableFields1.get(0);
-                return df.getSubfield('a');
-            }catch (Exception e){
+                DataField df = (DataField) variableFields1.get(0);
+                return df.getSubfield('a').getData();
+            } catch (Exception e) {
                 log.info("DataField {} was not found", tag);
+                return null;
             }
         }
+        log.info("DataField {} was not found", tag);
         return null;
     }
 //    /**
@@ -309,11 +332,13 @@ public class MarcRecordHelper {
 //                } else if (typeChar == 'p')  {
 //                    periodicalType = ElbaFacade.PeriodicalType.JOURNAL;
 //                } else {
-//                    log.warn("Didn't find periodical type in {} for {}, assuming Journal.", marcRecord.getVariableField("008"), almaRecord.getMmsId());
+//                    log.warn("Didn't find periodical type in {} for {}, assuming Journal.", marcRecord
+//                    .getVariableField("008"), almaRecord.getMmsId());
 //                    periodicalType = ElbaFacade.PeriodicalType.JOURNAL;
 //                }
 //            } catch (MarcXmlException e) {
-//                log.warn("Could not parse marc record {} in Bib {}.", almaRecord.getAny().stream().findFirst().toString(), almaRecord.getMmsId());
+//                log.warn("Could not parse marc record {} in Bib {}.", almaRecord.getAny().stream().findFirst()
+//                .toString(), almaRecord.getMmsId());
 //            }
 //            return periodicalType;
 //        }
